@@ -33,7 +33,7 @@ export default function Home() {
       <div className="relative z-10 mx-auto flex min-h-[72vh] max-w-[1400px] items-center px-6 lg:px-10">
         <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.8}} className="max-w-4xl">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-md"><Sparkles className="size-4 text-[#f0b879]"/>Algeria, through the people who call it home</div>
-          <h1 className="font-serif text-6xl font-semibold leading-[.94] tracking-[-.03em] text-white sm:text-7xl lg:text-[96px]">Don&apos;t just visit.<br/><em className="text-[#edbd87]">Belong awhile.</em></h1>
+          <h1 className="font-serif text-6xl font-semibold leading-[.94] tracking-[-.03em] text-white sm:text-7xl lg:text-[96px]">Don&apos;t just visit.<br/><em className="text-[#edbd87]">Feel at home.</em></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-white/80">Meet local families, makers, and guides. Ahlana matches your travel rhythm with authentic Algerian experiences.</p>
           <div className="mt-9 flex flex-wrap gap-3"><Button asChild variant="secondary" className="h-13 px-7"><Link href="/signup">Find my perfect match <ArrowRight className="size-4"/></Link></Button><Button asChild variant="outline" className="h-13 border-white/30 bg-white/10 px-7 text-white backdrop-blur-md hover:bg-white/20"><Link href="/dashboard">Explore Algeria</Link></Button></div>
         </motion.div>
