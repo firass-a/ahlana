@@ -5,6 +5,4 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(value: number) {
-  return `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(value)} DA`;
-}
+export { formatCurrency, type CurrencyCode } from "@/lib/currency";

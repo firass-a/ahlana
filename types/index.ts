@@ -160,6 +160,16 @@ export interface QuizAnswers {
   overallBudget?: string;
 }
 
+export interface PackageItemDates {
+  /** Car rental window inside the trip */
+  carStart?: string;
+  carEnd?: string;
+  /** Single-day workshop */
+  artisanDate?: string;
+  /** Activity id → scheduled day */
+  activities: Record<string, string>;
+}
+
 export interface PackageSelection {
   host?: string;
   car?: string;
@@ -167,4 +177,6 @@ export interface PackageSelection {
   activities: string[];
   startDate?: string;
   endDate?: string;
+  itemDates: PackageItemDates;
+  confirmed?: boolean;
 }

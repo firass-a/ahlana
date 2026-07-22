@@ -2,10 +2,13 @@
 
 import { create } from "zustand";
 import { activities, bookings, contracts, conversations, users } from "@/mock/data";
+import type { CurrencyCode } from "@/lib/currency";
+import type { LanguageCode } from "@/lib/i18n";
 import type {
   Booking,
   Contract,
   Conversation,
+  PackageItemDates,
   PackageSelection,
   QuizAnswers,
   Role,
@@ -16,6 +19,10 @@ const emptyQuiz: QuizAnswers = {
   languages: [],
   workshopPreferences: [],
   interests: [],
+};
+
+const defaultItemDates: PackageItemDates = {
+  activities: {},
 };
 
 interface AhlanaState {
@@ -33,6 +40,10 @@ interface AhlanaState {
   xp: number;
   theme: "light" | "dark";
   notifications: boolean;
+  language: LanguageCode;
+  currency: CurrencyCode;
+  /** Highest journey step unlocked: 1 package, 2 calendar, 3 chat */
+  journeyUnlocked: 1 | 2 | 3;
   signup: (input: { name: string; email: string; password: string; role: Role }) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
@@ -42,11 +53,17 @@ interface AhlanaState {
   book: (booking: Omit<Booking, "id" | "status">) => void;
   cancelBooking: (id: string) => void;
   updatePackage: (selection: Partial<PackageSelection>) => void;
+  updateItemDates: (dates: Partial<PackageItemDates>) => void;
+  clearPackageSchedule: () => void;
+  confirmPackage: () => void;
   addMessage: (conversationId: string, text: string, sender?: "me" | "them") => void;
   addJournalNote: (note: string) => void;
   updateProfile: (profile: Partial<Pick<User, "name" | "bio" | "avatar">>) => void;
   setTheme: (theme: "light" | "dark") => void;
   setNotifications: (enabled: boolean) => void;
+  setLanguage: (language: LanguageCode) => void;
+  setCurrency: (currency: CurrencyCode) => void;
+  unlockJourneyStep: (step: 1 | 2 | 3) => void;
 }
 
 export const useAhlanaStore = create<AhlanaState>((set, get) => ({
@@ -64,11 +81,16 @@ export const useAhlanaStore = create<AhlanaState>((set, get) => ({
     activities: [activities[0].id, activities[4].id],
     startDate: "2026-08-12",
     endDate: "2026-08-19",
+    itemDates: { ...defaultItemDates },
+    confirmed: false,
   },
   journalNotes: ["Mint tea at sunset with the Benali family — remember the story about the old fig tree."],
   xp: 680,
   theme: "light",
   notifications: true,
+  language: "en",
+  currency: "DZD",
+  journeyUnlocked: 1,
   signup: (input) => {
     if (get().users.some((user) => user.email.toLowerCase() === input.email.toLowerCase())) return false;
     const user: User = {
@@ -107,7 +129,54 @@ export const useAhlanaStore = create<AhlanaState>((set, get) => ({
       ),
     })),
   updatePackage: (selection) =>
-    set((state) => ({ packageSelection: { ...state.packageSelection, ...selection } })),
+    set((state) => ({
+      packageSelection: {
+        ...state.packageSelection,
+        ...selection,
+        itemDates: selection.itemDates
+          ? {
+              ...state.packageSelection.itemDates,
+              ...selection.itemDates,
+              activities: {
+                ...state.packageSelection.itemDates.activities,
+                ...(selection.itemDates.activities ?? {}),
+              },
+            }
+          : state.packageSelection.itemDates,
+      },
+    })),
+  updateItemDates: (dates) =>
+    set((state) => ({
+      packageSelection: {
+        ...state.packageSelection,
+        itemDates: {
+          ...state.packageSelection.itemDates,
+          ...dates,
+          activities: {
+            ...state.packageSelection.itemDates.activities,
+            ...(dates.activities ?? {}),
+          },
+        },
+      },
+    })),
+  clearPackageSchedule: () =>
+    set((state) => ({
+      packageSelection: {
+        ...state.packageSelection,
+        startDate: undefined,
+        endDate: undefined,
+        itemDates: { activities: {} },
+      },
+    })),
+  confirmPackage: () =>
+    set((state) => ({
+      packageSelection: { ...state.packageSelection, confirmed: true },
+      journeyUnlocked: state.journeyUnlocked < 2 ? 2 : state.journeyUnlocked,
+    })),
+  unlockJourneyStep: (step) =>
+    set((state) => ({
+      journeyUnlocked: state.journeyUnlocked < step ? step : state.journeyUnlocked,
+    })),
   addMessage: (conversationId, text, sender = "me") =>
     set((state) => ({
       conversations: state.conversations.map((conversation) =>
@@ -135,4 +204,6 @@ export const useAhlanaStore = create<AhlanaState>((set, get) => ({
     }),
   setTheme: (theme) => set({ theme }),
   setNotifications: (notifications) => set({ notifications }),
+  setLanguage: (language) => set({ language }),
+  setCurrency: (currency) => set({ currency }),
 }));
