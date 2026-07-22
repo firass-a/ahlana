@@ -224,7 +224,7 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
     return (
       <main className="mx-auto max-w-6xl p-5 md:p-8">
         <Header eyebrow={label("calendarEyebrow")} title={label("calendarTitle")} description={label("calendarDesc")} />
-        <p className="mt-3 text-xs font-semibold text-[#8a786c]">{label("stepOf", { n: 2, total: 3 })}</p>
+        <p className="mt-3 text-xs font-semibold text-[#8a786c]">{label("stepOf", { n: 2, total: 7 })}</p>
         <Card className="mt-6 overflow-hidden border-[#cdb99f] bg-[#e9dac5] p-3 shadow-[0_24px_70px_rgba(80,55,38,.13)] md:p-6">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
             <section ref={calendarRef} className="rounded-[1.75rem] border border-[#d8c6ae] bg-[#fbf5eb] p-5 md:p-7">
@@ -461,7 +461,7 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
   return (
     <main className="mx-auto w-full min-w-0 max-w-[1450px] p-5 md:p-8">
       <Header eyebrow={label("packageEyebrow")} title={label("packageTitle")} description={label("packageDesc")} />
-      <p className="mt-3 text-xs font-semibold text-[#8a786c]">{label("stepOf", { n: 1, total: 3 })}</p>
+      <p className="mt-3 text-xs font-semibold text-[#8a786c]">{label("stepOf", { n: 1, total: 7 })}</p>
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-8">
           <Selector labelText={label("chooseHost")} type="host" items={hosts} value={selection.host} />
@@ -536,6 +536,7 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
 export function ChatPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const unlockJourneyStep = useAhlanaStore((s) => s.unlockJourneyStep);
   const conversations=useAhlanaStore(s=>s.conversations),add=useAhlanaStore(s=>s.addMessage);
   const [active,setActive]=useState(conversations[0].id),[text,setText]=useState(""),[query,setQuery]=useState("");
   const [tab,setTab]=useState<"all"|"host"|"artisan"|"car"|"activity">("all");
@@ -553,12 +554,23 @@ export function ChatPage() {
   const tabs=[["all","chat.tabAll"],["host","chat.tabHost"],["artisan","chat.tabArtisan"],["car","chat.tabCar"],["activity","chat.tabActivity"]] as const;
   const agreementTitle=agreement==="accepted"?t("chat.termsAccepted"):agreement==="rejected"?t("chat.requestDeclined"):t("chat.awaiting");
   return <main className="flex h-[calc(100vh-70px)] min-h-[600px] flex-col p-3 md:p-6">
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 3, total: 3 })}</p>
-      <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/calendar")}>
-        <ArrowLeft className="size-4" />
-        {t("package.backToCalendar")}
-      </Button>
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 3, total: 7 })}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/calendar")}>
+          <ArrowLeft className="size-4" />
+          {t("package.backToCalendar")}
+        </Button>
+        <Button
+          className="h-9"
+          onClick={() => {
+            unlockJourneyStep(4);
+            router.push("/dashboard/contracts");
+          }}
+        >
+          {t("package.continueContract")} <ArrowRight className="size-4" />
+        </Button>
+      </div>
     </div>
     <Card className="grid min-h-0 flex-1 overflow-hidden bg-[#fbf7f0] md:grid-cols-[330px_1fr]">
     <aside className="flex min-h-0 flex-col border-r border-[#dfd3c4] bg-[#f4ece0]">
@@ -585,8 +597,98 @@ export function ChatPage() {
 
 export function ContractsPage() {
   const { t, money } = useI18n();
-  const list=useAhlanaStore(s=>s.contracts);
-  return <main className="mx-auto max-w-[1300px] p-5 md:p-8"><Header eyebrow={t("contracts.eyebrow")} title={t("contracts.title")} description={t("contracts.desc")}/><div className="mt-8 grid gap-5 md:grid-cols-2">{list.map(contract=><Card key={contract.id} className="p-5"><div className="flex justify-between"><span className="grid size-11 place-items-center rounded-2xl bg-[#e8eee6] text-[#214b3b]"><FileText/></span><Badge>{t(`status.${contract.status}`)}</Badge></div><p className="mt-5 text-xs text-[#8b7a6e]">{contract.id} · {contract.date}</p><h2 className="mt-1 font-serif text-2xl font-bold">{contract.host}</h2><p className="mt-2 text-sm text-[#77665b]">{contract.services.join(" · ")}</p><div className="mt-5 flex items-center justify-between border-t border-[#e5dbcf] pt-4"><strong>{money(contract.total)}</strong><Modal title={`${t("contracts.preview")} ${contract.id}`} trigger={<Button variant="outline">{t("contracts.preview")}</Button>}><Agreement contract={contract}/></Modal></div></Card>)}</div></main>;
+  const router = useRouter();
+  const unlockJourneyStep = useAhlanaStore((s) => s.unlockJourneyStep);
+  const list = useAhlanaStore((s) => s.contracts);
+  const [signed, setSigned] = useState(false);
+  return (
+    <main className="mx-auto max-w-[1300px] p-5 md:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 4, total: 7 })}</p>
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/chat")}>
+          <ArrowLeft className="size-4" />
+          {t("package.backToChat")}
+        </Button>
+      </div>
+      <Header eyebrow={t("contracts.eyebrow")} title={t("contracts.title")} description={t("contracts.desc")} />
+      <div className="mt-8 grid gap-5 md:grid-cols-2">
+        {list.map((contract) => (
+          <Card key={contract.id} className="p-5">
+            <div className="flex justify-between">
+              <span className="grid size-11 place-items-center rounded-2xl bg-[#e8eee6] text-[#214b3b]">
+                <FileText />
+              </span>
+              <Badge>{signed ? t("status.Signed") : t(`status.${contract.status}`)}</Badge>
+            </div>
+            <p className="mt-5 text-xs text-[#8b7a6e]">
+              {contract.id} · {contract.date}
+            </p>
+            <h2 className="mt-1 font-serif text-2xl font-bold">{contract.host}</h2>
+            <p className="mt-2 text-sm text-[#77665b]">{contract.services.join(" · ")}</p>
+            <div className="mt-5 flex items-center justify-between border-t border-[#e5dbcf] pt-4">
+              <strong>{money(contract.total)}</strong>
+              <Modal
+                title={`${t("contracts.preview")} ${contract.id}`}
+                trigger={<Button variant="outline">{t("contracts.preview")}</Button>}
+              >
+                <Agreement contract={contract} />
+              </Modal>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <Card className="mt-6 overflow-hidden p-0">
+        <div className="grid gap-0 md:grid-cols-[1.1fr_.9fr]">
+          <div className="border-b border-[#e5dbcf] p-6 md:border-b-0 md:border-r">
+            <p className="text-xs font-bold uppercase tracking-[.2em] text-[#b36d39]">{t("contracts.agreementEyebrow")}</p>
+            <h3 className="mt-3 font-serif text-3xl font-bold">{t("contracts.agreementTitle")}</h3>
+            <p className="mt-3 text-sm leading-6 text-[#77665b]">{t("contracts.desc")}</p>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-dashed border-[#cbbba6] bg-[#faf6ef] p-4">
+                <p className="text-xs text-[#8b7a6e]">{t("contracts.travelerSig")}</p>
+                <p className={`mt-6 font-serif text-2xl ${signed ? "text-[#214b3b]" : "text-[#c4b5a4]"}`}>
+                  {signed ? "Maya L." : "········"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-dashed border-[#cbbba6] bg-[#faf6ef] p-4">
+                <p className="text-xs text-[#8b7a6e]">{t("contracts.hostSig")}</p>
+                <p className={`mt-6 font-serif text-2xl ${signed ? "text-[#214b3b]" : "text-[#c4b5a4]"}`}>
+                  {signed ? "Amina B." : "········"}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#214b3b] p-6 text-white">
+            <ShieldCheck className="size-8 text-[#e9b87b]" />
+            <h3 className="mt-4 font-serif text-2xl font-bold">{t("contracts.preview")}</h3>
+            <p className="mt-2 text-sm text-white/65">{t("contracts.insuranceBody")}</p>
+            <Button
+              variant="secondary"
+              className="mt-6 w-full"
+              onClick={() => {
+                setSigned(true);
+                unlockJourneyStep(5);
+                toast.success(t("toasts.requestAccepted"));
+              }}
+            >
+              <PenLine className="size-4" />
+              {t("package.signContinue")}
+            </Button>
+            <Button
+              className="mt-3 w-full border-white/20 bg-white/10 text-white hover:bg-white/20"
+              disabled={!signed}
+              onClick={() => {
+                unlockJourneyStep(5);
+                router.push("/dashboard/invoices");
+              }}
+            >
+              {t("package.continueInvoice")} <ArrowRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </main>
+  );
 }
 
 function Agreement({contract}:{contract:(typeof contracts)[number]}) {
@@ -604,27 +706,230 @@ function Agreement({contract}:{contract:(typeof contracts)[number]}) {
 
 export function TripMapPage() {
   const { t } = useI18n();
+  const router = useRouter();
   const points:MapPoint[]=[
     {id:"1",name:t("tripMap.p1"),coordinates:hosts[0].coordinates,detail:t("tripMap.p1d")},
     {id:"2",name:t("tripMap.p2"),coordinates:[36.784,3.061],detail:t("tripMap.p2d")},
     {id:"3",name:t("tripMap.p3"),coordinates:[36.74,3.09],detail:t("tripMap.p3d")},
     {id:"4",name:t("tripMap.p4"),coordinates:[36.72,3.04],detail:t("tripMap.p4d")},
   ];
-  return <main className="mx-auto max-w-[1500px] p-5 md:p-8"><Header eyebrow={t("tripMap.eyebrow")} title={t("tripMap.title")}/><div className="mt-7 grid gap-5 xl:grid-cols-[1fr_340px]"><div className="overflow-hidden rounded-[1.5rem] border border-[#d6c8b6]"><TravelMap points={points} route/></div><Card className="p-5"><h2 className="font-serif text-2xl font-bold">{t("tripMap.timeline")}</h2>{points.map((p,i)=><div key={p.id} className="relative flex gap-3 pb-6 last:pb-0"><div className="relative z-10 grid size-9 shrink-0 place-items-center rounded-full bg-[#214b3b] text-xs text-white">{i+1}</div>{i<points.length-1&&<span className="absolute left-[17px] top-9 h-[calc(100%-36px)] border-l border-dashed border-[#bcae9b]"/>}<div><strong className="text-sm">{p.name}</strong><p className="text-xs text-[#837267]">{p.detail}</p></div></div>)}</Card></div></main>;
+  return (
+    <main className="mx-auto max-w-[1500px] p-5 md:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 7, total: 7 })}</p>
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/payment")}>
+          <ArrowLeft className="size-4" />
+          {t("package.backToPayment")}
+        </Button>
+      </div>
+      <Header eyebrow={t("tripMap.eyebrow")} title={t("tripMap.title")} description={t("package.tripRecap")} />
+      <div className="mt-7 grid gap-5 xl:grid-cols-[1fr_340px]">
+        <div className="overflow-hidden rounded-[1.5rem] border border-[#d6c8b6]">
+          <TravelMap points={points} route />
+        </div>
+        <Card className="p-5">
+          <h2 className="font-serif text-2xl font-bold">{t("tripMap.timeline")}</h2>
+          {points.map((p, i) => (
+            <div key={p.id} className="relative flex gap-3 pb-6 last:pb-0">
+              <div className="relative z-10 grid size-9 shrink-0 place-items-center rounded-full bg-[#214b3b] text-xs text-white">
+                {i + 1}
+              </div>
+              {i < points.length - 1 && (
+                <span className="absolute left-[17px] top-9 h-[calc(100%-36px)] border-l border-dashed border-[#bcae9b]" />
+              )}
+              <div>
+                <strong className="text-sm">{p.name}</strong>
+                <p className="text-xs text-[#837267]">{p.detail}</p>
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </main>
+  );
 }
 
 export function PaymentPage() {
   const { t, money } = useI18n();
-  const [success,setSuccess]=useState(false),[method,setMethod]=useState("Visa");
-  const total=119700;
-  if(success)return <main className="grid min-h-[calc(100vh-70px)] place-items-center p-6"><div className="max-w-lg text-center"><motion.div initial={{scale:0}} animate={{scale:1}} className="mx-auto grid size-24 place-items-center rounded-full bg-[#214b3b] text-white"><Check className="size-12"/></motion.div><h1 className="mt-6 font-serif text-5xl font-semibold">{t("payment.successTitle")}</h1><p className="mt-3 text-[#7d6c60]">{t("payment.successBody")}</p><Button className="mt-7" onClick={()=>setSuccess(false)}>{t("payment.viewBooking")}</Button></div></main>;
-  return <main className="mx-auto max-w-5xl p-5 md:p-8"><Header eyebrow={t("payment.eyebrow")} title={t("payment.title")}/><div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]"><Card className="p-6"><h2 className="font-serif text-2xl font-bold">{t("payment.method")}</h2><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">{["Visa","Mastercard","PayPal","Apple Pay","Google Pay"].map(x=><button key={x} onClick={()=>setMethod(x)} className={`rounded-xl border p-3 text-xs font-bold ${method===x?"border-[#214b3b] bg-[#e7eee6]":"border-[#d8caba]"}`}>{x}</button>)}</div>{["Visa","Mastercard"].includes(method)?<div className="mt-6 space-y-4"><Input placeholder={t("payment.cardholder")}/><Input placeholder={t("payment.cardNumber")} defaultValue="4242 4242 4242 4242"/><div className="grid grid-cols-2 gap-3"><Input placeholder={t("payment.expiry")}/><Input placeholder={t("payment.cvc")}/></div></div>:<div className="mt-6 rounded-2xl bg-[#f0e8dd] p-8 text-center text-sm">{t("payment.continueWith",{method})}</div>}<label className="mt-5 flex items-center gap-2 text-xs"><input type="checkbox" defaultChecked/>{t("payment.acceptTerms")}</label><Button className="mt-6 w-full" onClick={()=>setSuccess(true)}><Lock className="size-4"/>{t("payment.paySecurely",{amount:money(total)})}</Button></Card><Card className="h-fit p-6"><p className="text-xs font-bold uppercase tracking-wider text-[#8d7b6f]">{t("payment.summary")}</p><h3 className="mt-3 font-serif text-2xl font-bold">{t("payment.sevenDays")}</h3><p className="mt-1 text-sm text-[#847368]">{t("payment.summaryDates")}</p><div className="my-5 space-y-3 border-y border-[#e4d9cb] py-5 text-sm"><div className="flex justify-between"><span>{t("payment.hostStay")}</span><strong>{money(70350)}</strong></div><div className="flex justify-between"><span>{t("payment.activities")}</span><strong>{money(27000)}</strong></div><div className="flex justify-between"><span>{t("payment.car")}</span><strong>{money(22350)}</strong></div></div><div className="flex justify-between"><strong>{t("common.total")}</strong><strong className="font-serif text-3xl">{money(total)}</strong></div><p className="mt-4 flex gap-2 text-xs text-[#6e7e6d]"><ShieldCheck className="size-4"/>{t("payment.protected")}</p></Card></div></main>;
+  const router = useRouter();
+  const unlockJourneyStep = useAhlanaStore((s) => s.unlockJourneyStep);
+  const [success, setSuccess] = useState(false);
+  const [method, setMethod] = useState("Visa");
+  const total = 119700;
+  if (success)
+    return (
+      <main className="grid min-h-[calc(100vh-70px)] place-items-center p-6">
+        <div className="max-w-lg text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="mx-auto grid size-24 place-items-center rounded-full bg-[#214b3b] text-white"
+          >
+            <Check className="size-12" />
+          </motion.div>
+          <h1 className="mt-6 font-serif text-5xl font-semibold">{t("payment.successTitle")}</h1>
+          <p className="mt-3 text-[#7d6c60]">{t("payment.successBody")}</p>
+          <Button
+            className="mt-7"
+            onClick={() => {
+              unlockJourneyStep(7);
+              router.push("/dashboard/trip-map");
+            }}
+          >
+            {t("package.continueTripPlanner")} <ArrowRight className="size-4" />
+          </Button>
+        </div>
+      </main>
+    );
+  return (
+    <main className="mx-auto max-w-5xl p-5 md:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 6, total: 7 })}</p>
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/invoices")}>
+          <ArrowLeft className="size-4" />
+          {t("package.backToInvoice")}
+        </Button>
+      </div>
+      <Header eyebrow={t("payment.eyebrow")} title={t("payment.title")} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <Card className="p-6">
+          <h2 className="font-serif text-2xl font-bold">{t("payment.method")}</h2>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {["Visa", "Mastercard", "PayPal", "Apple Pay", "Google Pay"].map((x) => (
+              <button
+                key={x}
+                onClick={() => setMethod(x)}
+                className={`rounded-xl border p-3 text-xs font-bold ${method === x ? "border-[#214b3b] bg-[#e7eee6]" : "border-[#d8caba]"}`}
+              >
+                {x}
+              </button>
+            ))}
+          </div>
+          {["Visa", "Mastercard"].includes(method) ? (
+            <div className="mt-6 space-y-4">
+              <Input placeholder={t("payment.cardholder")} />
+              <Input placeholder={t("payment.cardNumber")} defaultValue="4242 4242 4242 4242" />
+              <div className="grid grid-cols-2 gap-3">
+                <Input placeholder={t("payment.expiry")} />
+                <Input placeholder={t("payment.cvc")} />
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl bg-[#f0e8dd] p-8 text-center text-sm">{t("payment.continueWith", { method })}</div>
+          )}
+          <label className="mt-5 flex items-center gap-2 text-xs">
+            <input type="checkbox" defaultChecked />
+            {t("payment.acceptTerms")}
+          </label>
+          <Button
+            className="mt-6 w-full"
+            onClick={() => {
+              unlockJourneyStep(7);
+              setSuccess(true);
+            }}
+          >
+            <Lock className="size-4" />
+            {t("payment.paySecurely", { amount: money(total) })}
+          </Button>
+        </Card>
+        <Card className="h-fit p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#8d7b6f]">{t("payment.summary")}</p>
+          <h3 className="mt-3 font-serif text-2xl font-bold">{t("payment.sevenDays")}</h3>
+          <p className="mt-1 text-sm text-[#847368]">{t("payment.summaryDates")}</p>
+          <div className="my-5 space-y-3 border-y border-[#e4d9cb] py-5 text-sm">
+            <div className="flex justify-between">
+              <span>{t("payment.hostStay")}</span>
+              <strong>{money(70350)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>{t("payment.activities")}</span>
+              <strong>{money(27000)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>{t("payment.car")}</span>
+              <strong>{money(22350)}</strong>
+            </div>
+          </div>
+          <div className="flex justify-between">
+            <strong>{t("common.total")}</strong>
+            <strong className="font-serif text-3xl">{money(total)}</strong>
+          </div>
+          <p className="mt-4 flex gap-2 text-xs text-[#6e7e6d]">
+            <ShieldCheck className="size-4" />
+            {t("payment.protected")}
+          </p>
+        </Card>
+      </div>
+    </main>
+  );
 }
 
 export function InvoicesPage() {
   const { t, money } = useI18n();
-  const bookings=useAhlanaStore(s=>s.bookings),cancel=useAhlanaStore(s=>s.cancelBooking);
-  return <main className="mx-auto max-w-[1300px] p-5 md:p-8"><Header eyebrow={t("invoices.eyebrow")} title={t("invoices.title")}/><Card className="mt-8 overflow-hidden"><div className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-[#e2d6c7] bg-[#eee6da] p-4 text-xs font-bold uppercase tracking-wider md:grid-cols-[1.5fr_1fr_1fr_1fr]"><span>{t("invoices.booking")}</span><span className="hidden md:block">{t("invoices.date")}</span><span>{t("invoices.status")}</span><span>{t("invoices.amount")}</span></div>{bookings.map(b=><div key={b.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-[#eee5da] p-4 last:border-0 md:grid-cols-[1.5fr_1fr_1fr_1fr]"><div><strong className="text-sm">{b.title}</strong><p className="text-xs text-[#8b7a6d]">{b.id}</p></div><span className="hidden text-sm md:block">{b.date}</span><Badge className={b.status==="Cancelled"?"bg-red-100 text-red-700":""}>{t(`status.${b.status}`)}</Badge><div className="flex items-center gap-2"><strong>{money(b.total)}</strong><Modal title={`${t("invoices.booking")} ${b.id}`} trigger={<button><Receipt className="size-4"/></button>}><Invoice booking={b}/></Modal>{b.status!=="Cancelled"&&<button onClick={()=>{cancel(b.id);toast.success(t("toasts.cancelled"))}}><Trash2 className="size-4 text-red-700"/></button>}</div></div>)}</Card></main>;
+  const router = useRouter();
+  const unlockJourneyStep = useAhlanaStore((s) => s.unlockJourneyStep);
+  const bookings = useAhlanaStore((s) => s.bookings);
+  const cancel = useAhlanaStore((s) => s.cancelBooking);
+  return (
+    <main className="mx-auto max-w-[1300px] p-5 md:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 5, total: 7 })}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/contracts")}>
+            <ArrowLeft className="size-4" />
+            {t("package.backToContract")}
+          </Button>
+          <Button
+            className="h-9"
+            onClick={() => {
+              unlockJourneyStep(6);
+              router.push("/dashboard/payment");
+            }}
+          >
+            {t("package.continuePayment")} <ArrowRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <Header eyebrow={t("invoices.eyebrow")} title={t("invoices.title")} />
+      <Card className="mt-8 overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-[#e2d6c7] bg-[#eee6da] p-4 text-xs font-bold uppercase tracking-wider md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <span>{t("invoices.booking")}</span>
+          <span className="hidden md:block">{t("invoices.date")}</span>
+          <span>{t("invoices.status")}</span>
+          <span>{t("invoices.amount")}</span>
+        </div>
+        {bookings.map((b) => (
+          <div
+            key={b.id}
+            className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-[#eee5da] p-4 last:border-0 md:grid-cols-[1.5fr_1fr_1fr_1fr]"
+          >
+            <div>
+              <strong className="text-sm">{b.title}</strong>
+              <p className="text-xs text-[#8b7a6d]">{b.id}</p>
+            </div>
+            <span className="hidden text-sm md:block">{b.date}</span>
+            <Badge className={b.status === "Cancelled" ? "bg-red-100 text-red-700" : ""}>{t(`status.${b.status}`)}</Badge>
+            <div className="flex items-center gap-2">
+              <strong>{money(b.total)}</strong>
+              <Modal title={`${t("invoices.booking")} ${b.id}`} trigger={<button><Receipt className="size-4" /></button>}>
+                <Invoice booking={b} />
+              </Modal>
+              {b.status !== "Cancelled" && (
+                <button
+                  onClick={() => {
+                    cancel(b.id);
+                    toast.success(t("toasts.cancelled"));
+                  }}
+                >
+                  <Trash2 className="size-4 text-red-700" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </Card>
+    </main>
+  );
 }
 
 function Invoice({booking}:{booking:{id:string;title:string;total:number;date:string}}){

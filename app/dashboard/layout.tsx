@@ -11,6 +11,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LocaleControls } from "@/components/locale-controls";
 import { t } from "@/lib/i18n";
+import {
+  JOURNEY_TOTAL,
+  journeyOrder,
+  journeyStepFromPath,
+  pathForJourneyStep,
+  tripProgressPct,
+  type JourneyStep,
+} from "@/lib/journey";
 import { cn } from "@/lib/utils";
 import { useAhlanaStore } from "@/store/use-ahlana-store";
 
@@ -27,31 +35,20 @@ const topLinks = [
   ["nav.profile", "profile", User],
 ] as const;
 
-const journeyOrder = ["build-package", "calendar", "chat"] as const;
-
-const journeyLinks: { slug: (typeof journeyOrder)[number]; icon: typeof Package; labelKey: string; step: 1 | 2 | 3 }[] = [
+const journeyLinks: {
+  slug: (typeof journeyOrder)[number];
+  icon: typeof Package;
+  labelKey: string;
+  step: JourneyStep;
+}[] = [
   { slug: "build-package", icon: Package, labelKey: "nav.buildPackage", step: 1 },
   { slug: "calendar", icon: CalendarDays, labelKey: "nav.calendar", step: 2 },
   { slug: "chat", icon: MessageCircle, labelKey: "nav.chat", step: 3 },
+  { slug: "contracts", icon: FileSignature, labelKey: "nav.contracts", step: 4 },
+  { slug: "invoices", icon: Receipt, labelKey: "nav.invoices", step: 5 },
+  { slug: "payment", icon: CreditCard, labelKey: "nav.payment", step: 6 },
+  { slug: "trip-map", icon: Map, labelKey: "nav.tripMap", step: 7 },
 ];
-
-const sideLinkKeys: { slug: string; icon: typeof Package; labelKey: string }[] = [
-  { slug: "contracts", icon: FileSignature, labelKey: "nav.contracts" },
-  { slug: "trip-map", icon: Map, labelKey: "nav.tripMap" },
-  { slug: "payment", icon: CreditCard, labelKey: "nav.payment" },
-  { slug: "invoices", icon: Receipt, labelKey: "nav.invoices" },
-];
-
-function requiredStepForPath(pathname: string): 1 | 2 | 3 | null {
-  if (pathname.includes("/calendar")) return 2;
-  if (pathname.includes("/chat")) return 3;
-  if (pathname.includes("/build-package")) return 1;
-  return null;
-}
-
-function pathForStep(step: 1 | 2 | 3) {
-  return `/dashboard/${journeyOrder[step - 1]}`;
-}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -62,21 +59,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const language = useAhlanaStore((state) => state.language);
   const packageSelection = useAhlanaStore((state) => state.packageSelection);
   const journeyUnlocked = useAhlanaStore((state) => state.journeyUnlocked);
-  const journeyStep = pathname.includes("calendar")
-    ? 2
-    : pathname.includes("chat")
-      ? 3
-      : pathname.includes("build-package")
-        ? 1
-        : packageSelection.confirmed
-          ? Math.min(journeyUnlocked, 2)
-          : 1;
-  const tripPct = journeyUnlocked === 3 ? 100 : journeyUnlocked === 2 ? 66 : 33;
+  const pathStep = journeyStepFromPath(pathname);
+  const journeyStep: JourneyStep =
+    pathStep ?? (packageSelection.confirmed ? (Math.min(journeyUnlocked, 2) as JourneyStep) : 1);
+  const tripPct = tripProgressPct(journeyUnlocked);
 
   useEffect(() => {
-    const needed = requiredStepForPath(pathname);
+    const needed = journeyStepFromPath(pathname);
     if (needed && needed > journeyUnlocked) {
-      router.replace(pathForStep(journeyUnlocked));
+      router.replace(pathForJourneyStep(journeyUnlocked));
     }
   }, [pathname, journeyUnlocked, router]);
 
@@ -96,7 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   }, [language]);
 
-  const goJourney = (step: 1 | 2 | 3) => {
+  const goJourney = (step: JourneyStep) => {
     if (step > journeyUnlocked) {
       toast.info(t(language, "package.stepLocked"));
       return;
@@ -120,7 +111,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     ...topLinks.map(([labelKey, slug, icon]) => [t(language, labelKey), slug, icon] as const),
     ...journeyLinks.map(({ slug, icon, labelKey }) => [t(language, labelKey), slug, icon] as const),
-    ...sideLinkKeys.map(({ slug, icon, labelKey }) => [t(language, labelKey), slug, icon] as const),
   ];
 
   return (
@@ -165,42 +155,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       <div className="flex">
-        <aside className="sticky top-[70px] hidden h-[calc(100vh-70px)] w-[230px] shrink-0 border-r border-[#dacdbb] bg-[#efe5d8]/70 p-4 lg:block">
-          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#998677]">
+        <aside className="relative sticky top-[70px] hidden h-[calc(100vh-70px)] w-[230px] shrink-0 overflow-y-auto border-r border-[#dacdbb] bg-[#efe5d8]/70 p-4 lg:block">
+          <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#998677]">
             {t(language, "nav.startJourney")}
           </p>
-          <div className="mb-3 flex items-center gap-1 px-2">
-            {journeyLinks.map((item, index) => {
-              const step = item.step;
-              const unlocked = step <= journeyUnlocked;
-              const done = journeyUnlocked > step;
-              const current = journeyStep === step;
-              return (
-                <div key={item.slug} className="flex flex-1 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => goJourney(step)}
-                    disabled={!unlocked}
-                    title={t(language, item.labelKey)}
-                    className={cn(
-                      "grid size-7 place-items-center rounded-full text-[10px] font-bold transition",
-                      current || done
-                        ? "bg-[#214b3b] text-white"
-                        : unlocked
-                          ? "bg-[#d5e2d8] text-[#214b3b] hover:bg-[#214b3b] hover:text-white"
-                          : "cursor-not-allowed bg-[#e4d8c8] text-[#8a786c]",
-                    )}
-                  >
-                    {unlocked ? step : <Lock className="size-3" />}
-                  </button>
-                  {index < journeyLinks.length - 1 && (
-                    <span className={cn("h-0.5 flex-1 rounded-full", journeyUnlocked > step ? "bg-[#214b3b]" : "bg-[#e4d8c8]")} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <nav className="space-y-1">
+          <p className="mb-3 px-3 text-xs text-[#8a786c]">
+            {t(language, "package.stepOf", { n: journeyStep, total: JOURNEY_TOTAL })}
+          </p>
+          <nav className="space-y-1 pb-28">
             {journeyLinks.map(({ slug, icon: Icon, labelKey, step }) => {
               const unlocked = step <= journeyUnlocked;
               const active = pathname.includes(slug);
@@ -210,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   type="button"
                   onClick={() => goJourney(step)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition",
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
                     active
                       ? "bg-white text-[#214b3b] shadow-sm"
                       : unlocked
@@ -218,30 +180,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         : "cursor-not-allowed text-[#b0a194]",
                   )}
                 >
-                  <Icon className="size-4.5 shrink-0" />
+                  <span
+                    className={cn(
+                      "grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-bold",
+                      active || (unlocked && journeyUnlocked > step)
+                        ? "bg-[#214b3b] text-white"
+                        : unlocked
+                          ? "bg-[#d5e2d8] text-[#214b3b]"
+                          : "bg-[#e4d8c8] text-[#8a786c]",
+                    )}
+                  >
+                    {unlocked ? step : <Lock className="size-3" />}
+                  </span>
                   <span className="min-w-0 flex-1 truncate">{t(language, labelKey)}</span>
                   {!unlocked && <Lock className="size-3.5 shrink-0 opacity-70" />}
                 </button>
               );
             })}
-          </nav>
-          <p className="mb-2 mt-5 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#998677]">
-            {t(language, "common.navigate")}
-          </p>
-          <nav className="space-y-1">
-            {sideLinkKeys.map(({ slug, icon: Icon, labelKey }) => (
-              <Link
-                key={slug}
-                href={`/dashboard/${slug}`}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
-                  pathname.includes(slug) ? "bg-white text-[#214b3b] shadow-sm" : "text-[#6f5f54] hover:bg-white/60",
-                )}
-              >
-                <Icon className="size-4.5" />
-                {t(language, labelKey)}
-              </Link>
-            ))}
           </nav>
           <div className="absolute bottom-5 left-4 right-4 rounded-2xl bg-[#214b3b] p-4 text-white">
             <Sparkles className="size-5 text-[#e9b87b]" />
@@ -255,7 +210,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {mobile && (
-        <div className="fixed inset-0 z-50 bg-[#f5eee4] p-5 lg:hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f5eee4] p-5 lg:hidden">
           <div className="flex items-center justify-between">
             <strong className="font-serif text-2xl">AHLANA</strong>
             <button onClick={() => setMobile(false)}>

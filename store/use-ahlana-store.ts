@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { activities, bookings, contracts, conversations, users } from "@/mock/data";
 import type { CurrencyCode } from "@/lib/currency";
+import type { JourneyStep } from "@/lib/journey";
 import type { LanguageCode } from "@/lib/i18n";
 import type {
   Booking,
@@ -42,8 +43,8 @@ interface AhlanaState {
   notifications: boolean;
   language: LanguageCode;
   currency: CurrencyCode;
-  /** Highest journey step unlocked: 1 package, 2 calendar, 3 chat */
-  journeyUnlocked: 1 | 2 | 3;
+  /** Highest journey step unlocked: 1 package … 7 trip planner */
+  journeyUnlocked: JourneyStep;
   signup: (input: { name: string; email: string; password: string; role: Role }) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
@@ -63,7 +64,7 @@ interface AhlanaState {
   setNotifications: (enabled: boolean) => void;
   setLanguage: (language: LanguageCode) => void;
   setCurrency: (currency: CurrencyCode) => void;
-  unlockJourneyStep: (step: 1 | 2 | 3) => void;
+  unlockJourneyStep: (step: JourneyStep) => void;
 }
 
 export const useAhlanaStore = create<AhlanaState>((set, get) => ({
