@@ -5,8 +5,8 @@ export const journeyOrder = [
   "calendar",
   "chat",
   "contracts",
-  "invoices",
   "payment",
+  "invoices",
   "trip-map",
 ] as const;
 

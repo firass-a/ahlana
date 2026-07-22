@@ -45,8 +45,8 @@ const journeyLinks: {
   { slug: "calendar", icon: CalendarDays, labelKey: "nav.calendar", step: 2 },
   { slug: "chat", icon: MessageCircle, labelKey: "nav.chat", step: 3 },
   { slug: "contracts", icon: FileSignature, labelKey: "nav.contracts", step: 4 },
-  { slug: "invoices", icon: Receipt, labelKey: "nav.invoices", step: 5 },
-  { slug: "payment", icon: CreditCard, labelKey: "nav.payment", step: 6 },
+  { slug: "payment", icon: CreditCard, labelKey: "nav.payment", step: 5 },
+  { slug: "invoices", icon: Receipt, labelKey: "nav.invoices", step: 6 },
   { slug: "trip-map", icon: Map, labelKey: "nav.tripMap", step: 7 },
 ];
 

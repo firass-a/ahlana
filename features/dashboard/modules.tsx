@@ -679,10 +679,10 @@ export function ContractsPage() {
               disabled={!signed}
               onClick={() => {
                 unlockJourneyStep(5);
-                router.push("/dashboard/invoices");
+                router.push("/dashboard/payment");
               }}
             >
-              {t("package.continueInvoice")} <ArrowRight className="size-4" />
+              {t("package.continuePayment")} <ArrowRight className="size-4" />
             </Button>
           </div>
         </div>
@@ -717,9 +717,9 @@ export function TripMapPage() {
     <main className="mx-auto max-w-[1500px] p-5 md:p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 7, total: 7 })}</p>
-        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/payment")}>
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/invoices")}>
           <ArrowLeft className="size-4" />
-          {t("package.backToPayment")}
+          {t("package.backToInvoice")}
         </Button>
       </div>
       <Header eyebrow={t("tripMap.eyebrow")} title={t("tripMap.title")} description={t("package.tripRecap")} />
@@ -772,11 +772,11 @@ export function PaymentPage() {
           <Button
             className="mt-7"
             onClick={() => {
-              unlockJourneyStep(7);
-              router.push("/dashboard/trip-map");
+              unlockJourneyStep(6);
+              router.push("/dashboard/invoices");
             }}
           >
-            {t("package.continueTripPlanner")} <ArrowRight className="size-4" />
+            {t("package.continueInvoice")} <ArrowRight className="size-4" />
           </Button>
         </div>
       </main>
@@ -784,10 +784,10 @@ export function PaymentPage() {
   return (
     <main className="mx-auto max-w-5xl p-5 md:p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 6, total: 7 })}</p>
-        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/invoices")}>
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 5, total: 7 })}</p>
+        <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/contracts")}>
           <ArrowLeft className="size-4" />
-          {t("package.backToInvoice")}
+          {t("package.backToContract")}
         </Button>
       </div>
       <Header eyebrow={t("payment.eyebrow")} title={t("payment.title")} />
@@ -824,7 +824,7 @@ export function PaymentPage() {
           <Button
             className="mt-6 w-full"
             onClick={() => {
-              unlockJourneyStep(7);
+              unlockJourneyStep(6);
               setSuccess(true);
             }}
           >
@@ -873,20 +873,20 @@ export function InvoicesPage() {
   return (
     <main className="mx-auto max-w-[1300px] p-5 md:p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 5, total: 7 })}</p>
+        <p className="text-xs font-semibold text-[#8a786c]">{t("package.stepOf", { n: 6, total: 7 })}</p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/contracts")}>
+          <Button variant="outline" className="h-9" onClick={() => router.push("/dashboard/payment")}>
             <ArrowLeft className="size-4" />
-            {t("package.backToContract")}
+            {t("package.backToPayment")}
           </Button>
           <Button
             className="h-9"
             onClick={() => {
-              unlockJourneyStep(6);
-              router.push("/dashboard/payment");
+              unlockJourneyStep(7);
+              router.push("/dashboard/trip-map");
             }}
           >
-            {t("package.continuePayment")} <ArrowRight className="size-4" />
+            {t("package.continueTripPlanner")} <ArrowRight className="size-4" />
           </Button>
         </div>
       </div>
