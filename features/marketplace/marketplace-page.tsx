@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BadgeCheck, CalendarDays, Clock, Filter, Gauge, Heart, Languages, MapPin, Play, Search, Star, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Badge, Button, Input, Modal } from "@/components/ui";
 import { useI18n } from "@/hooks/use-i18n";
@@ -34,10 +35,13 @@ const ALL_CATEGORY = "All";
 
 export function MarketplacePage({ section }: { section: "hosts" | "cars" | "artisans" | "activities" }) {
   const { t, tOption, money } = useI18n();
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("id");
   const [search,setSearch]=useState("");
   const [category,setCategory]=useState(ALL_CATEGORY);
   const [sort,setSort]=useState<(typeof SORT_OPTIONS)[number]>("Recommended");
   const [page,setPage]=useState(1);
+  const [openId,setOpenId]=useState<string|null>(focusId);
   const favorites=useAhlanaStore(state=>state.favorites);
   const toggleFavorite=useAhlanaStore(state=>state.toggleFavorite);
   const book=useAhlanaStore(state=>state.book);
@@ -52,6 +56,11 @@ export function MarketplacePage({ section }: { section: "hosts" | "cars" | "arti
   const keys=sectionKeys[section];
   const unitKey=section==="cars"?"common.day":section==="hosts"?"common.night":"common.person";
   const reserve=(item:CatalogItem)=>{book({kind:section==="hosts"?"host":section==="cars"?"car":section==="artisans"?"artisan":"activity",itemId:item.id,title:item.title,date:"2026-08-14",total:item.price});toast.success(t("toasts.addedJourney",{title:item.title}))};
+  const focusItem = useMemo(() => normalized[section].find((item) => item.id === openId) ?? null, [section, openId]);
+
+  useEffect(() => {
+    if (focusId) setOpenId(focusId);
+  }, [focusId]);
 
   return <main className="mx-auto max-w-[1500px] p-5 md:p-8">
     <div className="relative overflow-hidden rounded-[2rem] bg-[#214b3b] px-7 py-12 text-white md:px-12"><div className="absolute right-0 top-0 h-full w-2/5 bg-[radial-gradient(circle_at_center,rgba(255,255,255,.13),transparent_60%)]"/><p className="text-xs font-bold uppercase tracking-[.22em] text-[#e5b37d]">{t(keys.title)}</p><h1 className="mt-3 max-w-3xl font-serif text-5xl font-semibold">{t(keys.headline)}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">{t(keys.desc)}</p></div>
@@ -63,9 +72,14 @@ export function MarketplacePage({ section }: { section: "hosts" | "cars" | "arti
     <div className="mt-6 flex items-center justify-between"><p className="text-sm text-[#79695e]"><strong className="text-[#34251d]">{t("marketplace.results",{n:filtered.length})}</strong></p><p className="text-xs text-[#9a897c]">{t("marketplace.pricesShown",{unit:t(unitKey)})}</p></div>
     <AnimatePresence mode="popLayout"><motion.div layout className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{visible.map((item,index)=><motion.article layout initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:index*.035}} key={item.id} className="group overflow-hidden rounded-[1.55rem] border border-[#ded1c0] bg-white shadow-sm">
       <div className="relative h-56 overflow-hidden"><div className={`size-full bg-center transition duration-700 group-hover:scale-105 ${section==="cars"?"bg-[#e9e5de] bg-contain bg-no-repeat":"bg-cover"}`} style={{backgroundImage:`url(${item.cover})`}}/><div className="absolute left-3 top-3 flex gap-2"><Badge className="bg-white/90">{tOption(item.category)}</Badge>{item.verified&&<Badge className="bg-[#214b3b] text-white"><BadgeCheck className="mr-1 size-3"/>{t("common.verified")}</Badge>}</div><button onClick={()=>toggleFavorite(item.id)} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 shadow"><Heart className={`size-4 ${favorites.includes(item.id)?"fill-red-500 text-red-500":"text-[#49372c]"}`}/></button></div>
-      <div className="p-5"><div className="flex items-start justify-between gap-2"><div><h2 className="font-serif text-xl font-bold">{item.title}</h2><p className="mt-1 flex items-center gap-1 text-xs text-[#857468]"><MapPin className="size-3"/>{item.city}, {t("common.algeria")}</p></div>{item.rating&&<span className="flex items-center gap-1 text-xs font-bold"><Star className="size-3.5 fill-[#c97f40] text-[#c97f40]"/>{item.rating}</span>}</div><div className="mt-4 flex gap-1.5 overflow-hidden">{item.tags.slice(0,3).map(tag=><span key={tag} className="whitespace-nowrap rounded-lg bg-[#f2ece3] px-2 py-1 text-[10px] text-[#6d5c51]">{tag}</span>)}</div><div className="mt-5 flex items-center justify-between"><p><strong className="text-lg">{money(item.price)}</strong><small className="text-[#8a796d]"> / {t(unitKey)}</small></p><Modal title={item.title} trigger={<Button variant="outline" className="h-9 px-4">{t("common.view")}</Button>}><ItemDetail item={item} section={section} onBook={()=>reserve(item)}/></Modal></div></div>
+      <div className="p-5"><div className="flex items-start justify-between gap-2"><div><h2 className="font-serif text-xl font-bold">{item.title}</h2><p className="mt-1 flex items-center gap-1 text-xs text-[#857468]"><MapPin className="size-3"/>{item.city}, {t("common.algeria")}</p></div>{item.rating&&<span className="flex items-center gap-1 text-xs font-bold"><Star className="size-3.5 fill-[#c97f40] text-[#c97f40]"/>{item.rating}</span>}</div><div className="mt-4 flex gap-1.5 overflow-hidden">{item.tags.slice(0,3).map(tag=><span key={tag} className="whitespace-nowrap rounded-lg bg-[#f2ece3] px-2 py-1 text-[10px] text-[#6d5c51]">{tag}</span>)}</div><div className="mt-5 flex items-center justify-between"><p><strong className="text-lg">{money(item.price)}</strong><small className="text-[#8a796d]"> / {t(unitKey)}</small></p><Button variant="outline" className="h-9 px-4" onClick={()=>setOpenId(item.id)}>{t("common.view")}</Button></div></div>
     </motion.article>)}</motion.div></AnimatePresence>
     {!visible.length&&<div className="py-24 text-center"><Search className="mx-auto size-10 text-[#aa998b]"/><h3 className="mt-4 font-serif text-2xl font-bold">{t("marketplace.noMatches")}</h3><p className="mt-2 text-sm text-[#827165]">{t("marketplace.noMatchesBody")}</p></div>}
+    {focusItem && (
+      <Modal title={focusItem.title} open={!!openId} onOpenChange={(open)=>{if(!open)setOpenId(null)}} trigger={<span className="hidden" />}>
+        <ItemDetail item={focusItem} section={section} onBook={()=>reserve(focusItem)}/>
+      </Modal>
+    )}
     <div className="mt-9 flex justify-center gap-2">{Array.from({length:Math.ceil(filtered.length/8)},(_,index)=><button key={index} onClick={()=>setPage(index+1)} className={`grid size-10 place-items-center rounded-full text-sm ${page===index+1?"bg-[#214b3b] text-white":"bg-white"}`}>{index+1}</button>)}</div>
   </main>;
 }

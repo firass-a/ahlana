@@ -12,6 +12,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Modal } from "@/components/ui";
@@ -108,16 +109,23 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
   const selectedCar = vehicles.find((x) => x.id === selection.car);
   const selectedArtisan = artisans.find((x) => x.id === selection.artisan);
   const selectedActivities = activities.filter((x) => selection.activities.includes(x.id));
+  const extras = selection.hostExtras ?? { closet: false, bike: false };
 
   const nights =
     calendarRange?.from && calendarRange?.to
       ? Math.max(1, Math.round((calendarRange.to.getTime() - calendarRange.from.getTime()) / 86400000))
       : 7;
+  const closetExtra =
+    selectedHost?.traditionalClothes && extras.closet ? (selectedHost.closetPrice ?? 0) : 0;
+  const bikeExtra =
+    selectedHost?.bikeRental && extras.bike ? (selectedHost.bikePrice ?? 0) * nights : 0;
   const total =
     (selectedHost?.price ?? 0) * nights +
     (selectedCar?.price ?? 0) * nights +
     (selectedArtisan?.price ?? 0) +
-    selectedActivities.reduce((sum, x) => sum + x.price, 0);
+    selectedActivities.reduce((sum, x) => sum + x.price, 0) +
+    closetExtra +
+    bikeExtra;
 
   const calendarLabel = calendarRange?.from
     ? `${formatUiDate(calendarRange.from, language, { month: "long", day: "numeric" })}${
@@ -432,31 +440,56 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
     type: "host" | "car" | "artisan";
     items: { id: string; name: string; cover: string; price: number }[];
     value?: string;
-  }) => (
-    <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="min-w-0 font-serif text-xl font-bold">{labelText}</h3>
-        <Badge>{value ? label("selected") : label("chooseOne")}</Badge>
-      </div>
-      <div className="flex max-w-full gap-3 overflow-x-auto pb-2">
-        {items.slice(0, 5).map((item) => (
-          <button
-            onClick={() => update({ [type]: item.id })}
-            key={item.id}
-            className={`w-44 shrink-0 overflow-hidden rounded-2xl border text-left ${
-              value === item.id ? "border-[#214b3b] ring-2 ring-[#214b3b]/20" : "border-[#dacdbc]"
-            }`}
-          >
-            <div className="h-24 bg-cover bg-center" style={{ backgroundImage: `url(${item.cover})` }} />
-            <div className="bg-white p-3">
-              <strong className="block truncate text-sm">{item.name}</strong>
-              <small>{money(item.price)}</small>
+  }) => {
+    const profileHref = (id: string) => {
+      if (type === "host") return `/dashboard/hosts/${id}`;
+      if (type === "car") return `/dashboard/cars?id=${id}`;
+      return `/dashboard/artisans?id=${id}`;
+    };
+    return (
+      <div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="min-w-0 font-serif text-xl font-bold">{labelText}</h3>
+          <Badge>{value ? label("selected") : label("chooseOne")}</Badge>
+        </div>
+        <div className="flex max-w-full gap-3 overflow-x-auto pb-2">
+          {items.slice(0, 5).map((item) => (
+            <div
+              key={item.id}
+              className={`w-48 shrink-0 overflow-hidden rounded-2xl border bg-white text-left ${
+                value === item.id ? "border-[#214b3b] ring-2 ring-[#214b3b]/20" : "border-[#dacdbc]"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  update({
+                    [type]: item.id,
+                    ...(type === "host" ? { hostExtras: { closet: false, bike: false } } : {}),
+                  })
+                }
+                className="w-full text-left"
+              >
+                <div className="h-24 bg-cover bg-center" style={{ backgroundImage: `url(${item.cover})` }} />
+                <div className="p-3 pb-2">
+                  <strong className="block truncate text-sm">{item.name}</strong>
+                  <small>{money(item.price)}</small>
+                </div>
+              </button>
+              <div className="border-t border-[#eee5da] px-3 py-2">
+                <Link
+                  href={profileHref(item.id)}
+                  className="text-xs font-semibold text-[#214b3b] underline-offset-2 hover:underline"
+                >
+                  {label("viewMore")}
+                </Link>
+              </div>
             </div>
-          </button>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-[1450px] p-5 md:p-8">
@@ -471,26 +504,42 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
             <h3 className="font-serif text-xl font-bold">{label("chooseActivities")}</h3>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {activities.slice(0, 6).map((item) => (
-                <button
+                <div
                   key={item.id}
-                  onClick={() =>
-                    update({
-                      activities: selection.activities.includes(item.id)
-                        ? selection.activities.filter((x) => x !== item.id)
-                        : [...selection.activities, item.id],
-                    })
-                  }
                   className={`flex min-w-0 items-center gap-3 rounded-xl border bg-white p-3 text-left ${
-                    selection.activities.includes(item.id) ? "border-[#214b3b]" : ""
+                    selection.activities.includes(item.id) ? "border-[#214b3b]" : "border-[#e5dbcf]"
                   }`}
                 >
-                  <div className="size-14 shrink-0 rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${item.cover})` }} />
-                  <div className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm">{item.title}</strong>
-                    <small>{money(item.price)}</small>
-                  </div>
-                  {selection.activities.includes(item.id) && <CheckCircle2 className="shrink-0 text-[#214b3b]" />}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update({
+                        activities: selection.activities.includes(item.id)
+                          ? selection.activities.filter((x) => x !== item.id)
+                          : [...selection.activities, item.id],
+                      })
+                    }
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <div
+                      className="size-14 shrink-0 rounded-xl bg-cover bg-center"
+                      style={{ backgroundImage: `url(${item.cover})` }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <strong className="block truncate text-sm">{item.title}</strong>
+                      <small>{money(item.price)}</small>
+                    </div>
+                    {selection.activities.includes(item.id) && (
+                      <CheckCircle2 className="shrink-0 text-[#214b3b]" />
+                    )}
+                  </button>
+                  <Link
+                    href={`/dashboard/activities?id=${item.id}`}
+                    className="shrink-0 text-xs font-semibold text-[#214b3b] underline-offset-2 hover:underline"
+                  >
+                    {label("viewMore")}
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
@@ -504,11 +553,15 @@ export function PackagePage({ calendarOnly = false }: { calendarOnly?: boolean }
             <div className="my-5 space-y-3 border-y border-[#e5dbcf] py-5">
               {[
                 [selectedHost?.name, (selectedHost?.price ?? 0) * nights],
+                extras.closet && selectedHost?.traditionalClothes
+                  ? [label("shareCloset"), closetExtra]
+                  : null,
+                extras.bike && selectedHost?.bikeRental ? [label("bikeRental"), bikeExtra] : null,
                 [selectedCar?.name, (selectedCar?.price ?? 0) * nights],
                 [selectedArtisan?.name, selectedArtisan?.price],
                 ...selectedActivities.map((x) => [x.title, x.price] as const),
               ]
-                .filter((x) => x[0])
+                .filter((x): x is [string, number] => Boolean(x?.[0]))
                 .map(([name, price]) => (
                   <div key={String(name)} className="flex items-start justify-between gap-3 text-sm">
                     <span className="min-w-0 flex-1 truncate">{name}</span>

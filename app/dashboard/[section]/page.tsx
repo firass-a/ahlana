@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   ChatPage, ContractsPage, HiddenGemsPage, InvoicesPage, JournalPage, PackagePage, PaymentPage,
@@ -7,7 +8,13 @@ import { MarketplacePage, VRCitiesPage } from "@/features/marketplace/marketplac
 
 export default async function DashboardSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
-  if (section === "hosts" || section === "cars" || section === "artisans" || section === "activities") return <MarketplacePage section={section}/>;
+  if (section === "hosts" || section === "cars" || section === "artisans" || section === "activities") {
+    return (
+      <Suspense fallback={<div className="p-8 text-sm text-[#88776b]">Loading…</div>}>
+        <MarketplacePage section={section} />
+      </Suspense>
+    );
+  }
   if (section === "vr-cities") return <VRCitiesPage/>;
   if (section === "journal") return <JournalPage/>;
   if (section === "support") return <SupportPage/>;

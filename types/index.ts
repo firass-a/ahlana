@@ -36,6 +36,10 @@ export interface Host {
   environment: "Calm" | "Balanced" | "Social";
   traditionalClothes: boolean;
   bikeRental: boolean;
+  /** Share-closet add-on price (DA) when traditionalClothes */
+  closetPrice: number;
+  /** Bicycle rental add-on price per day (DA) when bikeRental */
+  bikePrice: number;
   experiences: string[];
   availability: string[];
   price: number;
@@ -175,6 +179,11 @@ export interface PackageSelection {
   car?: string;
   artisan?: string;
   activities: string[];
+  /** Host-only extras chosen from the host profile */
+  hostExtras: {
+    closet: boolean;
+    bike: boolean;
+  };
   startDate?: string;
   endDate?: string;
   itemDates: PackageItemDates;

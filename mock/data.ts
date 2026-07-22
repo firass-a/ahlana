@@ -141,6 +141,8 @@ export const hosts: Host[] = Array.from({ length: 20 }, (_, index) => {
     environment: (["Calm", "Balanced", "Social"] as const)[index % 3],
     traditionalClothes: index % 2 === 0,
     bikeRental: index % 3 === 0,
+    closetPrice: 4500 + (index % 4) * 500,
+    bikePrice: 2200 + (index % 3) * 300,
     experiences: index % 2 ? ["Traditional cooking", "Market walk"] : ["Gardening", "Animal care"],
     availability: ["2026-08-12", "2026-08-13", "2026-08-14"],
     price: (38 + index * 3) * 150,

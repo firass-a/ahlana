@@ -35,6 +35,8 @@ const topLinks = [
   ["nav.profile", "profile", User],
 ] as const;
 
+const postReservationSlugs = new Set(["journal", "hidden-gems"]);
+
 const journeyLinks: {
   slug: (typeof journeyOrder)[number];
   icon: typeof Package;
@@ -63,6 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const journeyStep: JourneyStep =
     pathStep ?? (packageSelection.confirmed ? (Math.min(journeyUnlocked, 2) as JourneyStep) : 1);
   const tripPct = tripProgressPct(journeyUnlocked);
+  const reservationDone = journeyUnlocked >= 6;
 
   useEffect(() => {
     const needed = journeyStepFromPath(pathname);
@@ -70,6 +73,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace(pathForJourneyStep(journeyUnlocked));
     }
   }, [pathname, journeyUnlocked, router]);
+
+  useEffect(() => {
+    if (!reservationDone && postReservationSlugs.has(pathname.split("/").pop() ?? "")) {
+      toast.info(t(language, "package.lockedUntilReservation"));
+      router.replace("/dashboard/build-package");
+    }
+  }, [pathname, reservationDone, router, language]);
 
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
@@ -103,6 +113,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setMobile(false);
       return;
     }
+    if (postReservationSlugs.has(slug) && !reservationDone) {
+      toast.info(t(language, "package.lockedUntilReservation"));
+      setCommandOpen(false);
+      setMobile(false);
+      return;
+    }
     router.push(`/dashboard/${slug}`);
     setCommandOpen(false);
     setMobile(false);
@@ -124,18 +140,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <strong className="hidden font-serif text-2xl tracking-wide xl:block">AHLANA</strong>
           </Link>
           <nav className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex">
-            {topLinks.map(([labelKey, slug]) => (
-              <Link
-                key={slug}
-                href={`/dashboard/${slug}`}
-                className={cn(
-                  "whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition hover:bg-white",
-                  pathname.includes(slug) ? "bg-[#214b3b] text-white hover:bg-[#214b3b]" : "text-[#69594e]",
-                )}
-              >
-                {t(language, labelKey)}
-              </Link>
-            ))}
+            {topLinks.map(([labelKey, slug]) => {
+              const locked = postReservationSlugs.has(slug) && !reservationDone;
+              if (locked) {
+                return (
+                  <button
+                    key={slug}
+                    type="button"
+                    onClick={() => toast.info(t(language, "package.lockedUntilReservation"))}
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold text-[#b0a194]"
+                  >
+                    <Lock className="size-3" />
+                    {t(language, labelKey)}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={slug}
+                  href={`/dashboard/${slug}`}
+                  className={cn(
+                    "whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition hover:bg-white",
+                    pathname.includes(slug) ? "bg-[#214b3b] text-white hover:bg-[#214b3b]" : "text-[#69594e]",
+                  )}
+                >
+                  {t(language, labelKey)}
+                </Link>
+              );
+            })}
           </nav>
           <LocaleControls className="hidden md:flex" />
           <button

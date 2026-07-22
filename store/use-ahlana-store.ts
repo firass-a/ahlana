@@ -80,6 +80,7 @@ export const useAhlanaStore = create<AhlanaState>((set, get) => ({
   packageSelection: {
     host: "host-2",
     activities: [activities[0].id, activities[4].id],
+    hostExtras: { closet: false, bike: false },
     startDate: "2026-08-12",
     endDate: "2026-08-19",
     itemDates: { ...defaultItemDates },
@@ -134,6 +135,9 @@ export const useAhlanaStore = create<AhlanaState>((set, get) => ({
       packageSelection: {
         ...state.packageSelection,
         ...selection,
+        hostExtras: selection.hostExtras
+          ? { ...state.packageSelection.hostExtras, ...selection.hostExtras }
+          : state.packageSelection.hostExtras,
         itemDates: selection.itemDates
           ? {
               ...state.packageSelection.itemDates,
